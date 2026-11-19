@@ -106,3 +106,34 @@ def test_sizing_respects_units_and_risk():
     oz, units, risk_aud, margin = live.size_position(cfg, stop_usd=30, price=3670, audusd=0.65)
     assert oz == pytest.approx(units * 0.15)
     assert risk_aud <= cfg["account_balance_aud"] * cfg["risk_pct_per_trade"] / 100 + 1e-6
+
+
+def test_demo_trades_but_no_alerts_when_gates_fail(tmp_path, monkeypatch):
+    for mod in (goldbot,):
+        monkeypatch.setattr(mod, "ROOT", tmp_path)
+    monkeypatch.setattr(live, "STATE", tmp_path / "state")
+    monkeypatch.setattr(live, "LIVE", tmp_path / "state" / "live.json")
+    monkeypatch.setattr(live, "LEDGER", tmp_path / "state" / "ledger.csv")
+    monkeypatch.setattr(live, "fetch_last_price", lambda s: 0.65)
+    cfg = json.loads((goldbot.Path(__file__).resolve().parent.parent / "config.json").read_text())
+    cfg["auto_trade"].update(enabled=True, environment="practice", demo_trades_when_gates_fail=True)
+    (tmp_path / "config.json").write_text(json.dumps(cfg))
+    (tmp_path / "state").mkdir()
+    (tmp_path / "state" / "champion.json").write_text(json.dumps(dict(
+        enabled=False, reasons=["drawdown"], champion=dict(
+            tf="1h", family="supertrend_flip", params=st.FAMILIES["supertrend_flip"][1][0]))))
+    sent, synced = [], []
+    monkeypatch.setattr(live, "send", lambda *a, **k: sent.append(a[0]))
+    monkeypatch.setattr(live, "auto_trade", lambda c, d: synced.append(d))
+    df = synth()
+    for end in range(len(df) - 200, len(df)):
+        sub = df.iloc[:end]
+        live.main(now=sub.index[-1] + pd.Timedelta(minutes=62), hourly=sub)
+    assert sent == []                      # no Plus500 alerts
+    assert any(d is not None for d in synced)  # but demo got positions to mirror
+    # live account must never trade ungated
+    cfg["auto_trade"]["environment"] = "live"
+    (tmp_path / "config.json").write_text(json.dumps(cfg))
+    synced.clear()
+    live.main(now=df.index[-1] + pd.Timedelta(minutes=62), hourly=df)
+    assert all(d is None for d in synced)

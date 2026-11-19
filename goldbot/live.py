@@ -97,17 +97,27 @@ def main(now=None, hourly=None, quiet_unchanged=True):
     champ_file = _load(STATE / "champion.json", {"enabled": False, "reasons": ["research not run yet"]})
     live = _load(LIVE, {"position": None, "paused": False, "last_bar": None})
 
-    if not champ_file.get("enabled") or live.get("paused"):
-        if live.get("position"):
-            send("GOLD: close your bot position",
-                 "Signals are now OFF ("
-                 + "; ".join(champ_file.get("reasons", ["kill switch"])) +
-                 "). Close the position the bot opened.", "high", "warning")
-            live["position"] = None
-            LIVE.write_text(json.dumps(live, indent=2))
+    at = cfg.get("auto_trade", {})
+    alerts_on = bool(champ_file.get("enabled")) and not live.get("paused")
+    # Demo account may trade a champion that narrowly failed the gates, to build
+    # a live track record with practice money. Never applies to a live account.
+    demo_on = (at.get("enabled") and at.get("environment") == "practice"
+               and at.get("demo_trades_when_gates_fail") and champ_file.get("champion")
+               and not live.get("paused"))
+
+    if not alerts_on and live.get("position"):
+        send("GOLD: close your bot position",
+             "Plus500 signals are now OFF ("
+             + "; ".join(champ_file.get("reasons") or ["kill switch"]) +
+             "). Close the position the bot opened.", "high", "warning")
+        live["position"] = None
+        LIVE.write_text(json.dumps(live, indent=2))
+    if not alerts_on and not demo_on:
         auto_trade(cfg, None)
         print("Signals off:", champ_file.get("reasons"), "paused" if live.get("paused") else "")
         return
+    if not alerts_on:
+        print("Plus500 alerts OFF (gates failed); OANDA demo still trading.")
 
     champ = champ_file["champion"]
     tf = champ["tf"]
@@ -137,6 +147,13 @@ def main(now=None, hourly=None, quiet_unchanged=True):
             new.to_csv(LEDGER, mode="a", header=not LEDGER.exists(), index=False)
 
     engine_pos = dict(pos) if pos else None  # before any display adjustments
+    if not alerts_on:
+        auto_trade(cfg, engine_pos)
+        live.update(position=None, last_bar=last_bar)
+        LIVE.write_text(json.dumps(live, indent=2, default=str))
+        return
+    if pos and not old and not pos.get("new"):
+        pos = None  # alerts just switched on mid-trade: never alert a late entry
     same = (old and pos and old["direction"] == pos["direction"]
             and (pos.get("new") is None))
     if old and not pos:

@@ -31,6 +31,7 @@
     "environment": "practice",
     "risk_pct_per_trade": 1.0,
     "max_units": 10,
-    "size_as_if_balance_aud": 3595
+    "size_as_if_balance_aud": 3595,
+    "demo_trades_when_gates_fail": true
   }
 }
