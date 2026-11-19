@@ -17,7 +17,7 @@ jobs:
           python - <<'PY'
           from goldbot.data import fetch_hourly
           import os; os.makedirs("data", exist_ok=True)
-          for sym, name in [("GC=F", "gold_1h"), ("AUDUSD=X", "audusd_1h")]:
+          for sym, name in [("GC=F", "gold_1h"), ("SI=F", "silver_1h"), ("AUDUSD=X", "audusd_1h")]:
               df = fetch_hourly(sym); df.to_csv(f"data/{name}.csv"); print(name, len(df), df.index[0], df.index[-1])
           PY
       - run: |
