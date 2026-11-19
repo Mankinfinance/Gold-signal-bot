@@ -4,13 +4,25 @@
   random topic name and subscribe to the same name in the app.
 - Telegram: set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.
 """
+import csv
 import os
+from datetime import datetime, timezone
 
 import requests
+
+import goldbot
 
 
 def send(title, body, priority="default", tags=""):
     print(f"\n=== {title} ===\n{body}\n")
+    log = goldbot.ROOT / "state" / "events.csv"
+    log.parent.mkdir(exist_ok=True)
+    new = not log.exists()
+    with log.open("a", newline="") as f:
+        w = csv.writer(f)
+        if new:
+            w.writerow(["time_utc", "title", "body"])
+        w.writerow([datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"), title, body])
     topic = os.getenv("NTFY_TOPIC")
     if topic:
         server = os.getenv("NTFY_SERVER", "https://ntfy.sh")
