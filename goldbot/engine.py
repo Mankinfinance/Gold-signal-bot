@@ -28,6 +28,9 @@ class Position:
     risk: float
     best: float
     funding: float = 0.0
+    size: float = 1.0          # 0.5 after scaling out
+    banked: float = 0.0        # profit already taken on the closed half ($/oz of full size)
+    partial_done: bool = False
 
 
 def _rollover_mask(index, tf):
@@ -38,7 +41,8 @@ def _rollover_mask(index, tf):
     return np.asarray(((start < 22) & (end >= 22)) | (end >= 46), dtype=bool)
 
 
-def run(df, sigs, stop_atr, rr, trail, costs, tf="1h"):
+def run(df, sigs, stop_atr, rr, trail, costs, tf="1h", partial_r=0.0):
+    """partial_r > 0: close half at +partial_r x risk and move the stop to entry."""
     le, se, lx, sx = (s.to_numpy() for s in sigs)
     o, h, l, c = (df[k].to_numpy() for k in ("open", "high", "low", "close"))
     a = ind.atr(df).to_numpy()
@@ -51,7 +55,7 @@ def run(df, sigs, stop_atr, rr, trail, costs, tf="1h"):
 
     def close(i, price, reason):
         nonlocal pos
-        pnl = pos.direction * (price - pos.entry) - cost - pos.funding
+        pnl = pos.banked + pos.size * pos.direction * (price - pos.entry) - cost - pos.funding
         trades.append(dict(entry_time=pos.entry_time, exit_time=str(times[i]),
                            direction=pos.direction, entry=pos.entry, exit=price,
                            risk=pos.risk, r=pnl / pos.risk, reason=reason))
@@ -81,11 +85,17 @@ def run(df, sigs, stop_atr, rr, trail, costs, tf="1h"):
             elif pos.target is not None and (
                     (d == 1 and h[i] >= pos.target) or (d == -1 and l[i] <= pos.target)):
                 close(i, pos.target, "target")
+            elif partial_r and not pos.partial_done:
+                lvl = pos.entry + d * partial_r * pos.risk
+                if (d == 1 and h[i] >= lvl) or (d == -1 and l[i] <= lvl):
+                    pos.banked += 0.5 * partial_r * pos.risk
+                    pos.size, pos.partial_done = 0.5, True
+                    pos.stop = max(pos.stop, pos.entry) if d == 1 else min(pos.stop, pos.entry)
 
         # 3) end of bar bookkeeping
         if pos is not None:
             if roll[i]:
-                pos.funding += fund_rate * c[i]
+                pos.funding += fund_rate * c[i] * pos.size
             if trail and not np.isnan(a[i]):
                 d = pos.direction
                 pos.best = max(pos.best, c[i]) if d == 1 else min(pos.best, c[i])

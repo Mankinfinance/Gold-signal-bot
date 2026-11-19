@@ -137,3 +137,15 @@ def test_demo_trades_but_no_alerts_when_gates_fail(tmp_path, monkeypatch):
     synced.clear()
     live.main(now=df.index[-1] + pd.Timedelta(minutes=62), hourly=df)
     assert all(d is None for d in synced)
+
+
+def test_scale_out_banks_half_then_breakeven():
+    # ATR=2 -> risk 2. Bar 21 rallies to +1R (102), bar 22 falls back to entry.
+    rows = [(100, 101, 99, 100)] * 21 + [(100, 102.5, 100, 102), (102, 102, 99.5, 100)]
+    df = bars(rows)
+    n = len(df)
+    sigs = [s.set_axis(df.index) for s in
+            [flags(n, [19]), flags(n, []), flags(n, []), flags(n, [])]]
+    t, _, _ = engine.run(df, sigs, 1.0, 0, False, {**COSTS, "overnight_funding_pct": 0}, partial_r=1.0)
+    assert len(t) == 1 and t.iloc[0].reason == "stop" and t.iloc[0].exit == 100
+    assert t.iloc[0].r == pytest.approx((0.5 * 2 - 0.96) / 2, rel=1e-3)

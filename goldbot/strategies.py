@@ -123,12 +123,18 @@ PROFILES = {"max_profit": FAMILIES, "high_win_rate": HIGH_WIN_FAMILIES}
 def signals(family, df, params):
     p = dict(params)
     session, htf = p.pop("session", False), p.pop("htf", False)
+    volf = p.pop("volf", False)
+    p.pop("partial_r", None)
     fn = FAMILIES[family][0]
     le, se, lx, sx = [pd.Series(x, index=df.index).fillna(False).astype(bool)
                       for x in fn(df, **p)]
     if session:  # London open to New York afternoon, UTC
         hrs = pd.Series(df.index.hour, index=df.index)
         m = (hrs >= 7) & (hrs < 20)
+        le, se = le & m, se & m
+    if volf:  # skip panic spikes and dead markets
+        ratio = ind.atr(df, 14) / ind.atr(df, 200)
+        m = (ratio > 0.6) & (ratio < 1.8)
         le, se = le & m, se & m
     if htf:
         t = _htf_trend(df)
