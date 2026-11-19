@@ -1,26 +1,29 @@
 {
-  "updated": "2026-11-19T20:18:05.446779+00:00",
-  "enabled": true,
-  "reasons": [],
+  "updated": "2026-11-19T20:48:19.059544+00:00",
+  "enabled": false,
+  "reasons": [
+    "drawdown 15.29R > 15R"
+  ],
   "champion": {
     "tf": "1h",
-    "family": "ema_cross",
+    "family": "bb_fade",
     "params": {
-      "fast": 20,
-      "slow": 100,
-      "adx_min": 20,
-      "stop_atr": 2.0,
-      "rr": 0,
-      "trail": true
+      "n": 20,
+      "k": 2.5,
+      "trend_n": 200,
+      "stop_atr": 1.5,
+      "rr": 2.0,
+      "trail": false,
+      "session": true
     }
   },
   "oos": {
-    "trades": 122,
-    "win_rate": 0.311,
-    "profit_factor": 1.41,
-    "avg_r": 0.259,
-    "total_r": 31.61,
-    "max_dd_r": 14.33,
-    "score": 2.861433656393976
+    "trades": 114,
+    "win_rate": 0.333,
+    "profit_factor": 1.7,
+    "avg_r": 0.412,
+    "total_r": 47.01,
+    "max_dd_r": 15.29,
+    "score": 4.402699034046843
   }
 }
