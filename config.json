@@ -1,0 +1,30 @@
+{
+  "symbol": "GC=F",
+  "fx_symbol": "AUDUSD=X",
+  "timeframes": ["1h", "4h"],
+
+  "account_balance_aud": 20000,
+  "risk_pct_per_trade": 1.0,
+  "max_margin_pct_of_balance": 30,
+
+  "plus500": {
+    "unit_oz": 0.15,
+    "spread_usd": 0.66,
+    "slippage_usd": 0.30,
+    "overnight_funding_pct": 0.0326,
+    "initial_margin_pct": 5.0
+  },
+
+  "research": {
+    "train_months": 6,
+    "test_months": 1,
+    "min_train_trades": 12
+  },
+
+  "live_gates": {
+    "min_oos_trades": 30,
+    "min_profit_factor": 1.15,
+    "max_drawdown_r": 15,
+    "kill_switch_live_drawdown_r": 8
+  }
+}

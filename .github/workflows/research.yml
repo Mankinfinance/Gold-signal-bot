@@ -1,0 +1,41 @@
+name: Weekly strategy research
+on:
+  schedule:
+    - cron: "17 3 * * 6"   # Saturday 03:17 UTC, while gold is closed
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: goldbot-state, cancel-in-progress: false }
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - run: python -m goldbot.research
+      - name: Send weekly verdict
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import json; from goldbot.notify import send
+          c = json.load(open("state/champion.json")); o = c["oos"]
+          ch = c["champion"] or {}
+          send("GOLD BOT weekly research",
+               ("Signals ON" if c["enabled"] else "Signals OFF: " + "; ".join(c["reasons"]))
+               + f"\nChampion: {ch.get('tf')} {ch.get('family')}"
+               + f"\nOut-of-sample: {o['trades']} trades, win {o['win_rate']:.0%}, "
+                 f"PF {o['profit_factor']}, total {o['total_r']}R, max DD {o['max_dd_r']}R")
+          PY
+      - name: Commit results
+        run: |
+          git config user.name "gold-bot"; git config user.email "gold-bot@users.noreply.github.com"
+          git add state reports
+          git commit -m "Weekly research update" || exit 0
+          git pull --rebase && git push
