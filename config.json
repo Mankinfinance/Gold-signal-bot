@@ -5,6 +5,7 @@
     "1h",
     "4h"
   ],
+  "strategy_profile": "max_profit",
   "account_balance_aud": 3595,
   "risk_pct_per_trade": 1.0,
   "max_margin_pct_of_balance": 30,
@@ -18,13 +19,15 @@
   "research": {
     "train_months": 6,
     "test_months": 1,
-    "min_train_trades": 12
+    "min_train_trades": 12,
+    "min_win_rate": 0.0
   },
   "live_gates": {
     "min_oos_trades": 30,
     "min_profit_factor": 1.15,
     "max_drawdown_r": 15,
-    "kill_switch_live_drawdown_r": 8
+    "kill_switch_live_drawdown_r": 8,
+    "min_win_rate": 0.0
   },
   "auto_trade": {
     "enabled": true,

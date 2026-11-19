@@ -108,6 +108,18 @@ def _htf_trend(df):
     return up.reindex(df.index, method="ffill")
 
 
+# High win-rate profile: quick small target (0.2-0.33x the risk) with a wide stop.
+# Wins ~85-90% of trades; each loss costs about 5 wins, so profit per trade is small.
+HW_RISK = dict(stop_atr=[2.5, 4.0], rr=[0.2, 0.33], trail=[False], session=[False, True])
+HIGH_WIN_FAMILIES = {
+    "donchian_breakout": (donchian_breakout, _grid(n=[20, 55], exit_n=[10, 20], **HW_RISK)),
+    "bb_fade": (bb_fade, _grid(n=[20], k=[2.0, 2.5], trend_n=[100, 200], **HW_RISK)),
+    "rsi_pullback": (rsi_pullback, _grid(period=[2, 5], lo=[10, 25], trend_n=[100, 200], **HW_RISK)),
+    "ema_cross": (ema_cross, _grid(fast=[10, 20], slow=[50, 100], adx_min=[0, 20], **HW_RISK)),
+}
+PROFILES = {"max_profit": FAMILIES, "high_win_rate": HIGH_WIN_FAMILIES}
+
+
 def signals(family, df, params):
     p = dict(params)
     session, htf = p.pop("session", False), p.pop("htf", False)

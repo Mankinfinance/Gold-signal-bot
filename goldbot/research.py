@@ -27,7 +27,8 @@ def backtest_all(hourly, cfg, log=print):
     rows = []
     for tf in cfg["timeframes"]:
         df = resample(hourly, tf)
-        for fam, (_, grid) in st.FAMILIES.items():
+        families = st.PROFILES[cfg.get("strategy_profile", "max_profit")]
+        for fam, (_, grid) in families.items():
             for p in grid:
                 sig_p = {k: v for k, v in p.items() if k not in ("stop_atr", "rr", "trail")}
                 sigs = st.signals(fam, df, sig_p)
@@ -44,11 +45,11 @@ def _window(trades, start, end):
     return trades[m]
 
 
-def pick(rows, start, end, min_trades):
+def pick(rows, start, end, min_trades, min_win=0.0):
     best_by_family = {}
     for i, row in enumerate(rows):
         t = _window(row["trades"], start, end)
-        if len(t) < min_trades:
+        if len(t) < min_trades or (t.r > 0).mean() < min_win:
             continue
         s = metrics(t.r)["score"]
         key = (row["tf"], row["family"])
@@ -69,7 +70,7 @@ def walk_forward(rows, cfg):
     t0 = first.normalize()
     while t0 + tr < last:
         train_end, test_end = t0 + tr, t0 + tr + te
-        idx, per_fam = pick(rows, t0, train_end, rc["min_train_trades"])
+        idx, per_fam = pick(rows, t0, train_end, rc["min_train_trades"], rc.get("min_win_rate", 0))
         if idx is not None:
             t = _window(rows[idx]["trades"], train_end, test_end).copy()
             t["strategy"] = f'{rows[idx]["tf"]}:{rows[idx]["family"]}'
@@ -86,7 +87,8 @@ def walk_forward(rows, cfg):
         t0 += te
     oos_df = pd.concat(oos) if oos else pd.DataFrame(columns=["r"])
     fam_metrics = {k: metrics(pd.concat(v).r if v else []) for k, v in fam_oos.items()}
-    final_idx, _ = pick(rows, last - tr, last + pd.Timedelta(days=1), rc["min_train_trades"])
+    final_idx, _ = pick(rows, last - tr, last + pd.Timedelta(days=1), rc["min_train_trades"],
+                        rc.get("min_win_rate", 0))
     return oos_df, windows, fam_metrics, final_idx
 
 
@@ -98,6 +100,8 @@ def passes_gates(m, gates):
         reasons.append(f'profit factor {m["profit_factor"]} < {gates["min_profit_factor"]}')
     if m["max_dd_r"] > gates["max_drawdown_r"]:
         reasons.append(f'drawdown {m["max_dd_r"]}R > {gates["max_drawdown_r"]}R')
+    if m["win_rate"] < gates.get("min_win_rate", 0):
+        reasons.append(f'win rate {m["win_rate"]:.0%} < {gates["min_win_rate"]:.0%}')
     if m["total_r"] <= 0:
         reasons.append("lost money out of sample")
     return not reasons, reasons
