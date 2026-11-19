@@ -6,8 +6,8 @@
     "4h"
   ],
   "strategy_profile": "max_profit",
-  "account_balance_aud": 3595,
-  "risk_pct_per_trade": 1.0,
+  "account_balance_aud": 10000,
+  "risk_pct_per_trade": 2.0,
   "max_margin_pct_of_balance": 30,
   "plus500": {
     "unit_oz": 0.15,
@@ -32,9 +32,9 @@
   "auto_trade": {
     "enabled": true,
     "environment": "practice",
-    "risk_pct_per_trade": 1.0,
-    "max_units": 10,
-    "size_as_if_balance_aud": 3595,
+    "risk_pct_per_trade": 2.0,
+    "max_units": 20,
+    "size_as_if_balance_aud": 20000,
     "demo_trades_when_gates_fail": true
   }
 }
