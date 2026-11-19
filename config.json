@@ -3,7 +3,7 @@
   "fx_symbol": "AUDUSD=X",
   "timeframes": ["1h", "4h"],
 
-  "account_balance_aud": 20000,
+  "account_balance_aud": 3595,
   "risk_pct_per_trade": 1.0,
   "max_margin_pct_of_balance": 30,
 
