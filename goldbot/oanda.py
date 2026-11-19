@@ -111,7 +111,8 @@ def sync(broker, desired, cfg, send):
         acct, inst = broker.summary(), broker.instrument()
         cur = acct.get("currency", "AUD")
         audusd = broker.mid("AUD_USD") if cur == "AUD" else 1.0
-        units = size_units(float(acct["NAV"]), cur, audusd, at["risk_pct_per_trade"],
+        nav = float(at.get("size_as_if_balance_aud") or acct["NAV"])
+        units = size_units(nav, cur, audusd, at["risk_pct_per_trade"],
                            desired["risk"], inst, at["max_units"])
         if not units:
             send(f"AUTO {label}: trade skipped",

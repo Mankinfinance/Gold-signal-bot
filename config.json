@@ -27,9 +27,10 @@
     "kill_switch_live_drawdown_r": 8
   },
   "auto_trade": {
-    "enabled": false,
+    "enabled": true,
     "environment": "practice",
     "risk_pct_per_trade": 1.0,
-    "max_units": 10
+    "max_units": 10,
+    "size_as_if_balance_aud": 3595
   }
 }
