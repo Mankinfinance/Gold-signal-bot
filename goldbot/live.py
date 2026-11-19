@@ -16,6 +16,7 @@ from . import strategies as st
 from .data import TF_HOURS, drop_incomplete, fetch_hourly, fetch_last_price, resample
 from .engine import run, metrics
 from .notify import send
+from . import oanda
 
 STATE = ROOT / "state"
 LIVE = STATE / "live.json"
@@ -81,6 +82,16 @@ def entry_msg(pos, champ, cfg, audusd, price):
     return "\n".join(lines)
 
 
+def auto_trade(cfg, desired):
+    """Phase 2: mirror the position on OANDA if enabled. Never crashes the alerts."""
+    try:
+        broker = oanda.from_env(cfg)
+        if broker:
+            print("OANDA:", oanda.sync(broker, desired, cfg, send))
+    except Exception as e:
+        send("AUTO-TRADE ERROR", f"{e}\nCheck your OANDA account manually.", "urgent", "warning")
+
+
 def main(now=None, hourly=None, quiet_unchanged=True):
     cfg = load_config()
     champ_file = _load(STATE / "champion.json", {"enabled": False, "reasons": ["research not run yet"]})
@@ -94,6 +105,7 @@ def main(now=None, hourly=None, quiet_unchanged=True):
                  "). Close the position the bot opened.", "high", "warning")
             live["position"] = None
             LIVE.write_text(json.dumps(live, indent=2))
+        auto_trade(cfg, None)
         print("Signals off:", champ_file.get("reasons"), "paused" if live.get("paused") else "")
         return
 
@@ -124,6 +136,7 @@ def main(now=None, hourly=None, quiet_unchanged=True):
             new = new.assign(strategy=f"{tf}:{champ['family']}")
             new.to_csv(LEDGER, mode="a", header=not LEDGER.exists(), index=False)
 
+    engine_pos = dict(pos) if pos else None  # before any display adjustments
     same = (old and pos and old["direction"] == pos["direction"]
             and (pos.get("new") is None))
     if old and not pos:
@@ -150,6 +163,7 @@ def main(now=None, hourly=None, quiet_unchanged=True):
         if pos and old:
             pos["stop"] = old["stop"]  # keep the last stop we told you about
 
+    auto_trade(cfg, engine_pos)
     if pos:
         pos.pop("new", None)
     live.update(position=pos, last_bar=last_bar)

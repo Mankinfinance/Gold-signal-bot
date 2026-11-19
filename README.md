@@ -41,6 +41,25 @@ Results are in **R**: 1R is the amount risked per trade (1% of balance by defaul
    `reports/report.md` and `reports/equity.png` when it finishes.
 6. If the verdict is ON, the hourly workflow starts alerting on its own.
 
+## Phase 2: automatic trading on OANDA (off by default)
+
+Plus500 alerts keep working either way. When switched on, the bot also places,
+trails and closes the same trades by itself on an OANDA account.
+
+1. Open an OANDA **demo (practice)** account at oanda.com/au-en.
+2. In OANDA: My Account > Manage API Access > Generate a token. Note your
+   v20 account ID (looks like `101-011-12345678-001`).
+3. Add repo secrets `OANDA_TOKEN` and `OANDA_ACCOUNT_ID`.
+4. In `config.json` set `"auto_trade": {"enabled": true, ...}`. Leave
+   `"environment": "practice"`.
+5. Run it on demo for 4 to 8 weeks. Only then change `environment` to `"live"`
+   with a live account's token and ID.
+
+Safety rules built in: it only touches gold trades it opened itself, never opens
+late into an old signal, attaches the stop at the broker on every order, caps size
+at `max_units` oz, sends you a notification for every action, and closes
+everything if the kill switch trips or research turns signals off.
+
 ## Using the alerts on Plus500
 
 - Stops and targets are given as **distances from your fill** because the bot
