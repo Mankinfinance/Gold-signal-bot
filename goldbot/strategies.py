@@ -75,8 +75,11 @@ def _grid(**kw):
     return [dict(zip(keys, v)) for v in product(*kw.values())]
 
 
-TREND_RISK = dict(stop_atr=[2.0, 3.0], rr=[0, 3.0], trail=[True, False])
-REVERT_RISK = dict(stop_atr=[1.5, 2.5], rr=[1.0, 2.0], trail=[False])
+# session=True only allows entries 07:00-20:00 UTC (London + New York). Chosen in
+# Nov 2026 testing: it was the best setup on Jul 2025-May 2026 and stayed the best
+# on the untouched Jun-Nov 2026 holdout.
+TREND_RISK = dict(stop_atr=[2.0, 3.0], rr=[0, 3.0], trail=[True, False], session=[False, True])
+REVERT_RISK = dict(stop_atr=[1.5, 2.5], rr=[1.0, 2.0], trail=[False], session=[False, True])
 
 FAMILIES = {
     "ema_cross": (ema_cross, _grid(fast=[10, 20], slow=[50, 100], adx_min=[0, 20],
@@ -94,7 +97,28 @@ FAMILIES = {
 }
 
 
+def _htf_trend(df):
+    """Direction of the next timeframe up (1h -> 4h EMA50, 4h -> daily EMA20),
+    using only higher-timeframe bars that had fully closed."""
+    step = df.index.to_series().diff().median()
+    rule, n = ("4h", 50) if step <= pd.Timedelta(hours=1) else ("1D", 20)
+    hc = df.close.resample(rule, **({"origin": "epoch"} if rule == "4h" else {})).last().dropna()
+    up = (hc > ind.ema(hc, n)).astype(float).where(ind.ema(hc, n).notna())
+    up = up.shift(1)  # label at bar START; shift so we only use closed bars
+    return up.reindex(df.index, method="ffill")
+
+
 def signals(family, df, params):
+    p = dict(params)
+    session, htf = p.pop("session", False), p.pop("htf", False)
     fn = FAMILIES[family][0]
-    out = fn(df, **params)
-    return [pd.Series(x, index=df.index).fillna(False).astype(bool) for x in out]
+    le, se, lx, sx = [pd.Series(x, index=df.index).fillna(False).astype(bool)
+                      for x in fn(df, **p)]
+    if session:  # London open to New York afternoon, UTC
+        hrs = pd.Series(df.index.hour, index=df.index)
+        m = (hrs >= 7) & (hrs < 20)
+        le, se = le & m, se & m
+    if htf:
+        t = _htf_trend(df)
+        le, se = le & (t == 1), se & (t == 0)
+    return [le, se, lx, sx]
