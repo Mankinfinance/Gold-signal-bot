@@ -1,29 +1,29 @@
 {
-  "updated": "2026-11-19T20:48:19.059544+00:00",
+  "updated": "2026-11-20T00:44:18.708489+00:00",
   "enabled": false,
+  "fixed": true,
   "reasons": [
-    "drawdown 15.29R > 15R"
+    "fixed demo strategy: Plus500 alerts off until the demo proves it"
   ],
   "champion": {
-    "tf": "1h",
-    "family": "bb_fade",
+    "tf": "1d",
+    "family": "donchian_breakout",
     "params": {
-      "n": 20,
-      "k": 2.5,
-      "trend_n": 200,
-      "stop_atr": 1.5,
-      "rr": 2.0,
-      "trail": false,
-      "session": true
+      "n": 55,
+      "exit_n": 20,
+      "stop_atr": 2.0,
+      "rr": 0,
+      "trail": true
     }
   },
-  "oos": {
-    "trades": 114,
-    "win_rate": 0.333,
-    "profit_factor": 1.7,
-    "avg_r": 0.412,
-    "total_r": 47.01,
-    "max_dd_r": 15.29,
-    "score": 4.402699034046843
-  }
+  "backtest_recent": {
+    "trades": 10,
+    "win_rate": 0.6,
+    "profit_factor": 5.08,
+    "avg_r": 1.063,
+    "total_r": 10.63,
+    "max_dd_r": 1.03,
+    "score": 3.362993810984225
+  },
+  "why": "Only robust result in 12-year research (2015-2026 OANDA spot): 83% of 66 daily settings profitable; 55/20 with 2 ATR trailing stop +33R, max DD 3.3R, 10/12 years positive. Profit came from longs in gold's bull market (longs +36.5R, shorts -3.3R). Chosen 20 Nov 2026."
 }
