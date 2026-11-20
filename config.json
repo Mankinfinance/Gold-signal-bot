@@ -45,9 +45,10 @@
       "exit_n": 20,
       "stop_atr": 2.0,
       "rr": 0,
-      "trail": true
+      "trail": true,
+      "long_only": true
     },
     "plus500_alerts": false,
-    "why": "Only robust result in 12-year research (2015-2026 OANDA spot): 83% of 66 daily settings profitable; 55/20 with 2 ATR trailing stop +33R, max DD 3.3R, 10/12 years positive. Profit came from longs in gold's bull market (longs +36.5R, shorts -3.3R). Chosen 20 Nov 2026."
+    "why": "Only robust result in 12-year research (2015-2026 OANDA spot): 83% of 66 daily settings profitable; 55/20 with 2 ATR trailing stop +33R, max DD 3.3R, 10/12 years positive. Profit came from longs in gold's bull market (longs +36.5R, shorts -3.3R). Chosen 20 Nov 2026. Made long-only 20 Nov 2026 after an unseen 2006-2015 test: shorts lost in every regime (2006-11 -2.5R, 2011-15 bear -1.5R, 2016-26 -4.9R); strategy lost only 1.1R through the 2011-15 gold crash."
   }
 }

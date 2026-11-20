@@ -173,3 +173,13 @@ def test_fixed_daily_champion_runs_live(tmp_path, monkeypatch):
         live.main(now=sub.index[-1] + pd.Timedelta(minutes=62), hourly=sub)
     assert synced, "daily bars must not be skipped as stale"
     assert any(d is not None for d in synced)
+
+
+def test_long_only_never_shorts():
+    df = synth(3000)
+    p = dict(st.FAMILIES["donchian_breakout"][1][0])
+    sig_p = {k: v for k, v in p.items() if k not in ("stop_atr", "rr", "trail")}
+    le, se, lx, sx = st.signals("donchian_breakout", df, {**sig_p, "long_only": True})
+    assert not se.any()
+    t, _, _ = engine.run(df, [le, se, lx, sx], 2.0, 0, True, COSTS)
+    assert (t.direction == 1).all()

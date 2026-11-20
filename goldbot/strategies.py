@@ -124,6 +124,7 @@ def signals(family, df, params):
     p = dict(params)
     session, htf = p.pop("session", False), p.pop("htf", False)
     volf = p.pop("volf", False)
+    long_only = p.pop("long_only", False)
     p.pop("partial_r", None)
     fn = FAMILIES[family][0]
     le, se, lx, sx = [pd.Series(x, index=df.index).fillna(False).astype(bool)
@@ -132,6 +133,8 @@ def signals(family, df, params):
         hrs = pd.Series(df.index.hour, index=df.index)
         m = (hrs >= 7) & (hrs < 20)
         le, se = le & m, se & m
+    if long_only:  # gold shorts lost money in 2006-11, 2011-15 and 2016-26 alike
+        se = se & False
     if volf:  # skip panic spikes and dead markets
         ratio = ind.atr(df, 14) / ind.atr(df, 200)
         m = (ratio > 0.6) & (ratio < 1.8)
