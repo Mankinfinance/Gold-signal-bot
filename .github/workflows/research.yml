@@ -25,12 +25,14 @@ jobs:
         run: |
           python - <<'PY'
           import json; from goldbot.notify import send
-          c = json.load(open("state/champion.json")); o = c["oos"]
+          c = json.load(open("state/champion.json"))
+          o = c.get("oos") or c.get("backtest_recent")
+          label = "Out-of-sample" if "oos" in c else "Backtest, last 2 years (fixed strategy)"
           ch = c["champion"] or {}
           send("GOLD BOT weekly research",
                ("Signals ON" if c["enabled"] else "Signals OFF: " + "; ".join(c["reasons"]))
                + f"\nChampion: {ch.get('tf')} {ch.get('family')}"
-               + f"\nOut-of-sample: {o['trades']} trades, win {o['win_rate']:.0%}, "
+               + f"\n{label}: {o['trades']} trades, win {o['win_rate']:.0%}, "
                  f"PF {o['profit_factor']}, total {o['total_r']}R, max DD {o['max_dd_r']}R")
           PY
       - name: Commit results
