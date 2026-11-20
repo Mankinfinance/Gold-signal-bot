@@ -82,8 +82,9 @@ def test_research_and_live_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(live, "LIVE", tmp_path / "state" / "live.json")
     monkeypatch.setattr(live, "LEDGER", tmp_path / "state" / "ledger.csv")
     monkeypatch.setattr(live, "fetch_last_price", lambda s: 0.65)
-    (tmp_path / "config.json").write_text(
-        (goldbot.Path(__file__).resolve().parent.parent / "config.json").read_text())
+    cfg = json.loads((goldbot.Path(__file__).resolve().parent.parent / "config.json").read_text())
+    cfg.pop("fixed_champion", None)
+    (tmp_path / "config.json").write_text(json.dumps(cfg))
     df = synth()
     out = research.main(hourly=df, log=lambda *a: None)
     assert (tmp_path / "reports" / "report.md").exists()
@@ -149,3 +150,26 @@ def test_scale_out_banks_half_then_breakeven():
     t, _, _ = engine.run(df, sigs, 1.0, 0, False, {**COSTS, "overnight_funding_pct": 0}, partial_r=1.0)
     assert len(t) == 1 and t.iloc[0].reason == "stop" and t.iloc[0].exit == 100
     assert t.iloc[0].r == pytest.approx((0.5 * 2 - 0.96) / 2, rel=1e-3)
+
+
+def test_fixed_daily_champion_runs_live(tmp_path, monkeypatch):
+    monkeypatch.setattr(goldbot, "ROOT", tmp_path)
+    monkeypatch.setattr(research, "ROOT", tmp_path)
+    monkeypatch.setattr(live, "STATE", tmp_path / "state")
+    monkeypatch.setattr(live, "LIVE", tmp_path / "state" / "live.json")
+    monkeypatch.setattr(live, "LEDGER", tmp_path / "state" / "ledger.csv")
+    monkeypatch.setattr(live, "fetch_last_price", lambda s: 0.65)
+    cfg = json.loads((goldbot.Path(__file__).resolve().parent.parent / "config.json").read_text())
+    assert cfg["fixed_champion"]["tf"] == "1d"
+    (tmp_path / "config.json").write_text(json.dumps(cfg))
+    df = synth(24 * 700)
+    out = research.main(hourly=df, log=lambda *a: None)
+    assert out["fixed"] and not out["enabled"] and out["champion"]["tf"] == "1d"
+    synced = []
+    monkeypatch.setattr(live, "auto_trade", lambda c, d: synced.append(d))
+    monkeypatch.setattr(live, "send", lambda *a, **k: None)
+    for end in range(len(df) - 24 * 120, len(df), 24):   # one run per simulated day
+        sub = df.iloc[:end]
+        live.main(now=sub.index[-1] + pd.Timedelta(minutes=62), hourly=sub)
+    assert synced, "daily bars must not be skipped as stale"
+    assert any(d is not None for d in synced)

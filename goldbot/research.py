@@ -156,8 +156,33 @@ def write_report(oos_df, windows, fam_metrics, overall, ok, reasons, champion, h
         print("chart skipped:", e)
 
 
+def fixed_main(cfg, hourly, log=print):
+    """A strategy pinned in config.json: no re-selection, just a fresh backtest
+    summary. Plus500 alerts stay off unless fixed_champion.plus500_alerts is true;
+    the OANDA practice account trades it (auto_trade.demo_trades_when_gates_fail)."""
+    fc = cfg["fixed_champion"]
+    df = resample(hourly, fc["tf"])
+    sig_p = {k: v for k, v in fc["params"].items() if k not in ("stop_atr", "rr", "trail")}
+    p = fc["params"]
+    trades, _, _ = run(df, st.signals(fc["family"], df, sig_p), p["stop_atr"], p["rr"], p["trail"],
+                       cfg["plus500"], fc["tf"])
+    m = metrics(trades.r)
+    on = bool(fc.get("plus500_alerts"))
+    out = dict(updated=datetime.now(timezone.utc).isoformat(), enabled=on, fixed=True,
+               reasons=[] if on else ["fixed demo strategy: Plus500 alerts off until the demo proves it"],
+               champion=dict(tf=fc["tf"], family=fc["family"], params=fc["params"]),
+               backtest_recent=m, why=fc.get("why", ""))
+    (ROOT / "state").mkdir(exist_ok=True)
+    (ROOT / "state" / "champion.json").write_text(json.dumps(out, indent=2))
+    log(json.dumps(out, indent=2))
+    return out
+
+
 def main(hourly=None, log=print):
     cfg = load_config()
+    if cfg.get("fixed_champion"):
+        hourly = fetch_hourly(cfg["symbol"]) if hourly is None else hourly
+        return fixed_main(cfg, hourly, log)
     hourly = fetch_hourly(cfg["symbol"]) if hourly is None else hourly
     rows = backtest_all(hourly, cfg, log)
     oos_df, windows, fam_metrics, final_idx = walk_forward(rows, cfg)

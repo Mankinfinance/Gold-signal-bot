@@ -121,13 +121,16 @@ def main(now=None, hourly=None, quiet_unchanged=True):
 
     champ = champ_file["champion"]
     tf = champ["tf"]
-    hourly = fetch_hourly(cfg["symbol"], period="120d") if hourly is None else hourly
+    # daily strategies need ~300 trading days for the EMA(200) trend filter
+    period = "730d" if TF_HOURS[tf] >= 24 else "120d"
+    hourly = fetch_hourly(cfg["symbol"], period=period) if hourly is None else hourly
     df = drop_incomplete(resample(hourly, tf), tf, now)
     last_bar = str(df.index[-1])
     if live.get("last_bar") == last_bar and quiet_unchanged:
         print("No new closed bar since last run.")
         return
-    if (now or datetime.now(timezone.utc)) - df.index[-1] > pd.Timedelta(hours=TF_HOURS[tf] + 3):
+    bar_end = df.index[-1] + pd.Timedelta(hours=TF_HOURS[tf])
+    if (now or datetime.now(timezone.utc)) - bar_end > pd.Timedelta(hours=TF_HOURS[tf] + 3):
         print("Market closed or data stale, nothing to do.")
         return
 

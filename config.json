@@ -36,5 +36,18 @@
     "max_units": 20,
     "size_as_if_balance_aud": 20000,
     "demo_trades_when_gates_fail": true
+  },
+  "fixed_champion": {
+    "tf": "1d",
+    "family": "donchian_breakout",
+    "params": {
+      "n": 55,
+      "exit_n": 20,
+      "stop_atr": 2.0,
+      "rr": 0,
+      "trail": true
+    },
+    "plus500_alerts": false,
+    "why": "Only robust result in 12-year research (2015-2026 OANDA spot): 83% of 66 daily settings profitable; 55/20 with 2 ATR trailing stop +33R, max DD 3.3R, 10/12 years positive. Profit came from longs in gold's bull market (longs +36.5R, shorts -3.3R). Chosen 20 Nov 2026."
   }
 }
