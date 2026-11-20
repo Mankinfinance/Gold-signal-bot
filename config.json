@@ -6,7 +6,7 @@
     "4h"
   ],
   "strategy_profile": "max_profit",
-  "account_balance_aud": 10000,
+  "account_balance_aud": 5990,
   "risk_pct_per_trade": 2.0,
   "max_margin_pct_of_balance": 30,
   "plus500": {
