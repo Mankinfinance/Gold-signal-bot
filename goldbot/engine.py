@@ -48,13 +48,16 @@ def run(df, sigs, stop_atr, rr, trail, costs, tf="1h", partial_r=0.0):
     a = ind.atr(df).to_numpy()
     roll = _rollover_mask(df.index, tf)
     times = df.index
-    cost = costs["spread_usd"] + costs["slippage_usd"]
+    # cost per unit per round trip: fixed $ (gold on Plus500) or basis points of price
+    bps = costs.get("cost_bps")
+    cost_fixed = costs.get("spread_usd", 0) + costs.get("slippage_usd", 0)
     fund_rate = costs["overnight_funding_pct"] / 100
 
     trades, pos, pending = [], None, 0
 
     def close(i, price, reason):
         nonlocal pos
+        cost = bps * 1e-4 * pos.entry if bps is not None else cost_fixed
         pnl = pos.banked + pos.size * pos.direction * (price - pos.entry) - cost - pos.funding
         trades.append(dict(entry_time=pos.entry_time, exit_time=str(times[i]),
                            direction=pos.direction, entry=pos.entry, exit=price,

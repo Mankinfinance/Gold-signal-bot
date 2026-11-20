@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-TF_HOURS = {"1h": 1, "4h": 4}
+TF_HOURS = {"1h": 1, "4h": 4, "1d": 24}
 
 
 def fetch_hourly(symbol="GC=F", period="730d"):
