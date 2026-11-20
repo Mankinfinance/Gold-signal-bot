@@ -29,7 +29,10 @@ def candles(instrument, start="2015-01-01T00:00:00Z", gran="H1", env="practice")
 
 
 if __name__ == "__main__":
-    for inst in sys.argv[1:] or ["XAU_USD"]:
-        df = candles(inst)
-        df.to_csv(f"data/{inst.lower()}_oanda_1h.csv.gz", compression="gzip")
-        print(inst, len(df), df.index[0], df.index[-1])
+    # args: INSTRUMENT or INSTRUMENT:GRANULARITY:START, e.g. XAU_USD:D:2003-01-01
+    for arg in sys.argv[1:] or ["XAU_USD"]:
+        inst, gran, start = (arg.split(":") + ["H1", "2015-01-01"][len(arg.split(":")) - 1:])[:3]
+        df = candles(inst, start=f"{start}T00:00:00Z", gran=gran)
+        tag = "1h" if gran == "H1" else gran.lower()
+        df.to_csv(f"data/{inst.lower()}_oanda_{tag}.csv.gz", compression="gzip")
+        print(inst, gran, len(df), df.index[0], df.index[-1])
