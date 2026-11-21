@@ -5,3 +5,5 @@ Backtest, last 2 years (fixed strategy): 10 trades, win 60%, PF 5.08, total 10.6
 2026-11-20 09:45,GOLD BOT weekly research,"Signals OFF: fixed demo strategy: Plus500 alerts off until the demo proves it
 Champion: 1d donchian_breakout
 Backtest, last 2 years (fixed strategy): 7 trades, win 71%, PF 8.14, total 11.58R, max DD 1.03R"
+2026-11-21 01:21,AUTO-TRADE ERROR,"OANDA GET /openTrades -> 503: {""errorMessage"":""System under maintenance, please try again later.""}
+Check your OANDA account manually."
